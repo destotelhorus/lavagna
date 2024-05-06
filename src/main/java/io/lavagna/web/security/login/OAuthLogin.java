@@ -41,6 +41,7 @@ public class OAuthLogin extends AbstractLoginHandler {
 		r.put("github", GithubHandler.FACTORY);
 		r.put("google", GoogleHandler.FACTORY);
 		r.put("twitter", TwitterHandler.FACTORY);
+        r.put("discord", DiscordHandler.FACTORY);
 		SUPPORTED_OAUTH_HANDLER = Collections.unmodifiableMap(r);
 	}
 
