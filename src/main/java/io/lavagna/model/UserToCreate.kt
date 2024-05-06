@@ -34,4 +34,11 @@ class UserToCreate {
         this.username = username
         enabled = true
     }
+
+    constructor(provider: String, username: String, displayName: String) {
+        this.provider = provider
+        this.username = username
+        this.displayName = displayName
+        enabled = true
+    }
 }

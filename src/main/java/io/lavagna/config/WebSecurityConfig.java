@@ -177,6 +177,12 @@ public class WebSecurityConfig {
             this.userService = userService;
         }
 
+        private void createDefaultUser(String provider, String name, String displayName) {
+            UserToCreate userToCreate = new UserToCreate(provider, name, displayName);
+            userToCreate.setRoles(Collections.singletonList(Role.Companion.getDEFAULT_ROLE().getName()));
+            userService.createUser(userToCreate);
+        }
+
         private void createDefaultUser(String provider, String name) {
             UserToCreate userToCreate = new UserToCreate(provider, name);
             userToCreate.setRoles(Collections.singletonList(Role.Companion.getDEFAULT_ROLE().getName()));
@@ -205,6 +211,13 @@ public class WebSecurityConfig {
                 createDefaultUser(provider, name);
             }
         }
+
+        public void createIfConfiguredAndMissing(String provider, String name, String displayName) {
+
+            if (canLdap(provider, name) || canOauth(provider, name)) {
+                createDefaultUser(provider, name, displayName);
+            }
+        }
     }
 
     @Bean
@@ -220,6 +233,11 @@ public class WebSecurityConfig {
             @Override
             public boolean userExistsAndEnabled(String provider, String name) {
                 accountCreatorIfMissing.createIfConfiguredAndMissing(provider, name);
+                return userRepository.userExistsAndEnabled(provider, name);
+            }
+            @Override
+            public boolean userExistsAndEnabled(String provider, String name, String displayName) {
+                accountCreatorIfMissing.createIfConfiguredAndMissing(provider, name, displayName);
                 return userRepository.userExistsAndEnabled(provider, name);
             }
             @Override

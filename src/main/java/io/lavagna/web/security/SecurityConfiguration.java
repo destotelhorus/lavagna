@@ -293,6 +293,7 @@ public class SecurityConfiguration {
 
 	public interface Users {
 	    boolean userExistsAndEnabled(String provider, String name);
+        boolean userExistsAndEnabled(String provider, String name, String displayName);
 	    User findUserByName(String provider, String name);
 	}
 

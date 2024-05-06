@@ -65,7 +65,7 @@ public class DiscordHandler extends OAuthResultHandlerAdapter {
 
 	private static class UserInfo implements RemoteUserProfile {
 		String id;
-        String username;
+        String displayName;
 
         @SerializedName("avatar")
         String avatar_hash;
@@ -74,13 +74,17 @@ public class DiscordHandler extends OAuthResultHandlerAdapter {
 
 		@Override
 		public boolean valid(Users users, String provider) {
-			return users.userExistsAndEnabled(provider, id);
+			return users.userExistsAndEnabled(provider, id, displayName);
 		}
 
 		@Override
 		public String username() {
-			return username + " (" + id + ")";
+			return id;
 		}
+
+        public String displayName() {
+            return displayName;
+        }
 	}
 
 	public static final OAuthResultHandlerFactory FACTORY = new OAuthResultHandlerFactory.Adapter() {
@@ -126,7 +130,7 @@ public class DiscordHandler extends OAuthResultHandlerAdapter {
         oauthRequest.addHeader("User-Agent", "Mozilla/5.0 (compatible; Lavagna/1.0; +https://lavagna.io)");
         Response oauthResponse = oauthRequest.send();
         JsonElement profileRoot = JsonParser.parseString(oauthResponse.getBody());
-        final RemoteUserProfile profile;
+        final UserInfo profile;
         if ( profileRoot.isJsonObject() && ((JsonObject)profileRoot).get("user").isJsonObject() ) {
             JsonObject userObject = ((JsonObject)profileRoot).getAsJsonObject("user");
             UserInfo userInfoObj = new UserInfo();
@@ -135,7 +139,11 @@ public class DiscordHandler extends OAuthResultHandlerAdapter {
             if (userObject.has("email")) {
                 userInfoObj.email = userObject.get("email").getAsString();
             }
-            userInfoObj.username = userObject.get("username").getAsString();
+            if (userObject.has("global_name")) {
+                userInfoObj.displayName = userObject.get("global_name").getAsString();
+            } else if (userObject.has("username")) {
+                userInfoObj.displayName = userObject.get("username").getAsString();
+            }
 
             profile = userInfoObj;
         } else {
@@ -145,8 +153,9 @@ public class DiscordHandler extends OAuthResultHandlerAdapter {
 
         if ((profile != null) && profile.valid(users, provider)) {
             String url = Redirector.cleanupRequestedUrl(reqUrl, req);
-            boolean userExists = users.userExistsAndEnabled(provider, profile.username()); //We need this to honor autocreation settings
+            boolean userExists = users.userExistsAndEnabled(provider, profile.username(), profile.displayName()); //We need this to honor autocreation settings
             SecurityConfiguration.User user = users.findUserByName(provider, profile.username());
+
             sessionHandler.setUser(user.getId(), user.isAnonymous(), req, resp);
             Redirector.sendRedirect(req, resp, url, Collections.<String, List<String>> emptyMap());
         } else {
